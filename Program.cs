@@ -5,7 +5,7 @@ const int footprintWidth = 10;
 const int footprintLength = 10;
 const int minLayerHeight = 3;
 
-var storage = new LayeredStorage(footprintWidth, footprintLength, minLayerHeight);
+using var storage = new LayeredStorage(footprintWidth, footprintLength, minLayerHeight);
 
 int layersViaEvent = 0;
 storage.LayerStarted += _ => layersViaEvent++;
@@ -36,9 +36,11 @@ Console.WriteLine("Self-check passed: every placement is within the footprint.")
 
 static void VerifyInBounds(LayeredStorage storage, int width, int length)
 {
-    List<PackagePlacement> all = storage.RentPlacements();
+    List<PackagePlacement> all = null!;
+    ListPool<PackagePlacement>.Get(ref all);
     try
     {
+        storage.CopyPlacementsTo(all);
         foreach (PackagePlacement p in all)
         {
             if (p.X < 0 || p.Y < 0 || p.Z < 0 || p.X >= width || p.Y >= length)
@@ -47,6 +49,6 @@ static void VerifyInBounds(LayeredStorage storage, int width, int length)
     }
     finally
     {
-        storage.ReturnPlacements(all);
+        ListPool<PackagePlacement>.Release(ref all);
     }
 }

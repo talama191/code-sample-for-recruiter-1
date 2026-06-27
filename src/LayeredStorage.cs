@@ -1,12 +1,11 @@
 namespace SpatialStackingStore;
 
 /// <summary>Fixed-footprint, unbounded-height storage that fills layer by layer, reusing cached patterns.</summary>
-public sealed class LayeredStorage
+public sealed class LayeredStorage : IDisposable
 {
     private readonly LayerPacker _packer;
     private readonly LayerPatternCache _cache = new();
     private readonly List<PackagePlacement> _placements = new();
-    private readonly ListPool<PackagePlacement> _queryPool = new();
 
     private LayerPattern? _currentPattern;
     private PackageSize _currentSize;
@@ -55,13 +54,21 @@ public sealed class LayeredStorage
         _packer = new LayerPacker(width, length, minLayerHeight);
     }
 
+    public void Dispose()
+    {
+        _placements.Clear();
+        _cache.Dispose();
+        _placedCallbacks.Dispose();
+        _layerStartedCallbacks.Dispose();
+    }
+
     private bool NeedNewLayer(PackageSize size) =>
         _currentPattern is null || _slotIndex >= _currentPattern.Capacity || size != _currentSize;
 
     private void OpenLayer(PackageSize size)
     {
         if (_currentPattern is not null)
-            _currentLayerBaseZ += _currentPattern.Height;
+            _currentLayerBaseZ += _currentPattern.Height; // stack the new layer on top of the last
 
         _currentPattern = _cache.GetOrCompute(size, _packer.Pack);
         if (_currentPattern.Capacity == 0)
@@ -88,12 +95,5 @@ public sealed class LayeredStorage
         return placement;
     }
 
-    public List<PackagePlacement> RentPlacements()
-    {
-        List<PackagePlacement> list = _queryPool.Rent();
-        list.AddRange(_placements);
-        return list;
-    }
-
-    public void ReturnPlacements(List<PackagePlacement> list) => _queryPool.Return(list);
+    public void CopyPlacementsTo(List<PackagePlacement> destination) => destination.AddRange(_placements);
 }

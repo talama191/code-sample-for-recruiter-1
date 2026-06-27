@@ -27,10 +27,10 @@ every package (or every layer) is wasted work.
   package fills, plus the layer height) is computed once per package size and reused. A
   uniform stream of 10,000 packages therefore performs **one** packing calculation; every
   subsequent layer of that size is a cache hit.
-- **Pooled queries & low-overhead events.** A `ListPool<T>` backs an allocation-free
-  placement query API. Events (`Placed`, `LayerStarted`) use ordinary `+=` / `-=` syntax but
-  are backed by a `CallbackList<T>`, avoiding the delegate-array allocation a multicast event
-  incurs on every subscribe / unsubscribe.
+- **Pooled queries & low-overhead events.** A static `ListPool<T>` (`Get` / `Release` by `ref`)
+  keeps the placement-snapshot query allocation-free. Events (`Placed`, `LayerStarted`) use
+  ordinary `+=` / `-=` syntax but are backed by a `CallbackList<T>`, avoiding the delegate-array
+  allocation a multicast event incurs on every subscribe / unsubscribe.
 
 ## Layout
 
@@ -42,7 +42,7 @@ every package (or every layer) is wasted work.
 | `src/LayerPacker.cs` | Shelf-packs a uniform package into a layer pattern |
 | `src/LayerPatternCache.cs` | One pattern per package size — the core optimization |
 | `src/LayeredStorage.cs` | Fills layers, opens new ones, raises events |
-| `src/ListPool.cs` | Reusable `List<T>` pool with a `using`-scope helper |
+| `src/ListPool.cs` | Static pool of reusable lists (`Get` / `Release` by `ref`) |
 | `src/CallbackList.cs` | Allocation-light observer list |
 | `Program.cs` | Runnable demo + self-check |
 

@@ -1,12 +1,18 @@
 namespace SpatialStackingStore;
 
 /// <summary>Observer list backing low-overhead events; invokes over a reused snapshot.</summary>
-public sealed class CallbackList<T>
+public sealed class CallbackList<T> : IDisposable
 {
     private readonly List<Action<T>> _callbacks = new();
     private Action<T>[] _buffer = Array.Empty<Action<T>>();
 
     public int Count => _callbacks.Count;
+
+    public void Dispose()
+    {
+        _callbacks.Clear();
+        _buffer = Array.Empty<Action<T>>();
+    }
 
     public void Add(Action<T> callback)
     {
